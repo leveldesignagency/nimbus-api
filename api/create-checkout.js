@@ -60,10 +60,9 @@ export default async function handler(req, res) {
     }
 
     // Create Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
+    // Only use customer OR customer_email, not both
+    const sessionConfig = {
       payment_method_types: ['card'],
-      customer: customerId,
-      customer_email: email || undefined,
       line_items: [
         {
           price_data: {
@@ -88,7 +87,16 @@ export default async function handler(req, res) {
         version: '1.0.7',
         userEmail: email || '',
       },
-    });
+    };
+    
+    // Only set customer if we have customerId, otherwise use customer_email
+    if (customerId) {
+      sessionConfig.customer = customerId;
+    } else if (email) {
+      sessionConfig.customer_email = email;
+    }
+    
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     return res.status(200).json({
       sessionId: session.id,
