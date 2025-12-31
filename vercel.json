@@ -2,7 +2,25 @@
   "functions": {
     "api/chat.js": {
       "maxDuration": 30
+    },
+    "api/verify-license.js": {
+      "maxDuration": 10
+    },
+    "api/create-checkout.js": {
+      "maxDuration": 10
+    },
+    "api/create-payment-intent.js": {
+      "maxDuration": 10
+    },
+    "api/confirm-subscription.js": {
+      "maxDuration": 10
+    },
+    "api/stripe-webhook.js": {
+      "maxDuration": 10
     }
   }
 }
+
+
+
 
