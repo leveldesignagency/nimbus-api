@@ -44,7 +44,8 @@ export default async function handler(req, res) {
 
     // Get the return URL and email from request
     const { returnUrl, email } = req.body;
-    const successUrl = returnUrl || 'https://chrome.google.com/webstore';
+    // Use hosted success page instead of extension URL (which doesn't work in regular tabs)
+    const successUrl = 'https://nimbus-api-ten.vercel.app/success.html?session_id={CHECKOUT_SESSION_ID}';
     const cancelUrl = returnUrl || 'https://chrome.google.com/webstore';
 
     // Create or get customer by email if provided
