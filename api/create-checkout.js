@@ -82,6 +82,9 @@ export default async function handler(req, res) {
       mode: 'subscription',
       success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}&success=true`,
       cancel_url: cancelUrl,
+      subscription_data: {
+        trial_period_days: 3, // 3-day free trial
+      },
       metadata: {
         extension: 'nimbus',
         version: '1.0.7',

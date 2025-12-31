@@ -1,4 +1,13 @@
 {
+  "rewrites": [
+    { "source": "/api/chat", "destination": "/api/chat.js" },
+    { "source": "/api/create-checkout", "destination": "/api/create-checkout.js" },
+    { "source": "/api/verify-license", "destination": "/api/verify-license.js" },
+    { "source": "/api/create-payment-intent", "destination": "/api/create-payment-intent.js" },
+    { "source": "/api/confirm-subscription", "destination": "/api/confirm-subscription.js" },
+    { "source": "/api/stripe-webhook", "destination": "/api/stripe-webhook.js" },
+    { "source": "/api/process-refund", "destination": "/api/process-refund.js" }
+  ],
   "functions": {
     "api/chat.js": {
       "maxDuration": 30
@@ -16,6 +25,9 @@
       "maxDuration": 10
     },
     "api/stripe-webhook.js": {
+      "maxDuration": 10
+    },
+    "api/process-refund.js": {
       "maxDuration": 10
     }
   }
