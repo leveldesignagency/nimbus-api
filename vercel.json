@@ -6,7 +6,8 @@
     { "source": "/api/create-payment-intent", "destination": "/api/create-payment-intent.js" },
     { "source": "/api/confirm-subscription", "destination": "/api/confirm-subscription.js" },
     { "source": "/api/stripe-webhook", "destination": "/api/stripe-webhook.js" },
-    { "source": "/api/process-refund", "destination": "/api/process-refund.js" }
+    { "source": "/api/process-refund", "destination": "/api/process-refund.js" },
+    { "source": "/api/get-session", "destination": "/api/get-session.js" }
   ],
   "functions": {
     "api/chat.js": {
@@ -28,6 +29,9 @@
       "maxDuration": 10
     },
     "api/process-refund.js": {
+      "maxDuration": 10
+    },
+    "api/get-session.js": {
       "maxDuration": 10
     }
   }
