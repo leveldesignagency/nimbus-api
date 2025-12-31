@@ -24,7 +24,10 @@ export default async function handler(req, res) {
     
     if (!stripeSecretKey || !stripePublishableKey) {
       console.error('Stripe keys not configured');
-      return res.status(500).json({ error: 'Server configuration error' });
+      return res.status(500).json({ 
+        error: 'Server configuration error',
+        details: 'STRIPE_SECRET_KEY or STRIPE_PUBLISHABLE_KEY not set in Vercel environment variables'
+      });
     }
 
     // Import Stripe
