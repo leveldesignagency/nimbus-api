@@ -22,21 +22,17 @@
     .container {
       background: white;
       border-radius: 16px;
-      padding: 40px;
+      padding: 50px 40px;
       max-width: 500px;
       width: 100%;
       text-align: center;
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     }
-    .logo {
-      height: 50px;
-      margin-bottom: 20px;
-    }
     h1 {
       color: #1e3a8a;
-      font-size: 28px;
+      font-size: 32px;
       font-weight: 700;
-      margin-bottom: 15px;
+      margin-bottom: 20px;
     }
     p {
       color: #64748b;
@@ -61,22 +57,22 @@
     .info {
       color: #94a3b8;
       font-size: 14px;
-      margin-top: 20px;
+      margin-top: 25px;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Payment Successful</h1>
-    <p>Your subscription has been activated. Please return to the Nimbus extension to start using all features.</p>
+    <p>Your subscription has been activated. Please return to the Nimbus extension and reload your browser to start using all features.</p>
     <button class="button" onclick="window.close()">Close This Window</button>
-    <p class="info">This window will close automatically in a few seconds</p>
+    <p class="info">This window will close automatically in 5 seconds</p>
   </div>
   <script>
-    // Auto-close after 3 seconds
+    // Auto-close after 5 seconds
     setTimeout(() => {
       window.close();
-    }, 3000);
+    }, 5000);
     
     // Also try to close if user clicks anywhere
     document.addEventListener('click', () => {
@@ -85,4 +81,3 @@
   </script>
 </body>
 </html>
-
