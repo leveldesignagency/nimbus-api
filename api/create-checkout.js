@@ -45,8 +45,9 @@ export default async function handler(req, res) {
     // Get the return URL and email from request
     const { returnUrl, email } = req.body;
     // Use extension popup URL - background script will handle closing the tab
-    const successUrl = returnUrl || 'chrome-extension://gdcojblmelaiofpnlkahnpnlgjmjimab/popup.html?session_id={CHECKOUT_SESSION_ID}&success=true';
-    const cancelUrl = returnUrl || 'chrome-extension://gdcojblmelaiofpnlkahnpnlgjmjimab/popup.html?cancelled=true';
+    // returnUrl should be the extension popup URL (chrome-extension://.../popup.html)
+    const successUrl = returnUrl ? `${returnUrl}?session_id={CHECKOUT_SESSION_ID}&success=true` : 'chrome-extension://invalid/popup.html?session_id={CHECKOUT_SESSION_ID}&success=true';
+    const cancelUrl = returnUrl ? `${returnUrl}?cancelled=true` : 'chrome-extension://invalid/popup.html?cancelled=true';
 
     // Create or get customer by email if provided
     let customerId;
