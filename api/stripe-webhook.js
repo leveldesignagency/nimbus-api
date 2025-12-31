@@ -7,8 +7,14 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  // Check for test keys first (if TEST_STRIPE_SECRET_KEY is set, use test mode)
+  const useTestMode = !!process.env.TEST_STRIPE_SECRET_KEY;
+  const stripeSecretKey = useTestMode 
+    ? process.env.TEST_STRIPE_SECRET_KEY 
+    : process.env.STRIPE_SECRET_KEY;
+  const webhookSecret = useTestMode
+    ? process.env.TEST_STRIPE_WEBHOOK_SECRET
+    : process.env.STRIPE_WEBHOOK_SECRET;
 
   if (!stripeSecretKey || !webhookSecret) {
     console.error('Stripe configuration missing');

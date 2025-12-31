@@ -19,14 +19,23 @@ export default async function handler(req, res) {
 
   try {
     // Get Stripe keys from environment variables
-    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-    const stripePublishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
+    // Check for test keys first (if TEST_STRIPE_SECRET_KEY is set, use test mode)
+    // Otherwise use production keys
+    const useTestMode = !!process.env.TEST_STRIPE_SECRET_KEY;
+    const stripeSecretKey = useTestMode 
+      ? process.env.TEST_STRIPE_SECRET_KEY 
+      : process.env.STRIPE_SECRET_KEY;
+    const stripePublishableKey = useTestMode
+      ? process.env.TEST_STRIPE_PUBLISHABLE_KEY
+      : process.env.STRIPE_PUBLISHABLE_KEY;
     
     if (!stripeSecretKey || !stripePublishableKey) {
       console.error('Stripe keys not configured');
       return res.status(500).json({ 
         error: 'Server configuration error',
-        details: 'STRIPE_SECRET_KEY or STRIPE_PUBLISHABLE_KEY not set in Vercel environment variables'
+        details: useTestMode 
+          ? 'TEST_STRIPE_SECRET_KEY or TEST_STRIPE_PUBLISHABLE_KEY not set in Vercel environment variables'
+          : 'STRIPE_SECRET_KEY or STRIPE_PUBLISHABLE_KEY not set in Vercel environment variables'
       });
     }
 

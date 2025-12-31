@@ -9,8 +9,14 @@ export default async function handler(req, res) {
 
   try {
     // Get Stripe keys from environment variables
-    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-    const stripePublishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
+    // Check for test keys first (if TEST_STRIPE_SECRET_KEY is set, use test mode)
+    const useTestMode = !!process.env.TEST_STRIPE_SECRET_KEY;
+    const stripeSecretKey = useTestMode 
+      ? process.env.TEST_STRIPE_SECRET_KEY 
+      : process.env.STRIPE_SECRET_KEY;
+    const stripePublishableKey = useTestMode
+      ? process.env.TEST_STRIPE_PUBLISHABLE_KEY
+      : process.env.STRIPE_PUBLISHABLE_KEY;
     
     if (!stripeSecretKey || !stripePublishableKey) {
       console.error('Stripe keys not configured');

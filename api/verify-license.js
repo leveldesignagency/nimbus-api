@@ -15,10 +15,14 @@ export default async function handler(req, res) {
     }
 
     // Get Stripe secret key from environment variable
-    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    // Check for test keys first (if TEST_STRIPE_SECRET_KEY is set, use test mode)
+    const useTestMode = !!process.env.TEST_STRIPE_SECRET_KEY;
+    const stripeSecretKey = useTestMode 
+      ? process.env.TEST_STRIPE_SECRET_KEY 
+      : process.env.STRIPE_SECRET_KEY;
     
     if (!stripeSecretKey) {
-      console.error('STRIPE_SECRET_KEY environment variable not set');
+      console.error(useTestMode ? 'TEST_STRIPE_SECRET_KEY' : 'STRIPE_SECRET_KEY', 'environment variable not set');
       return res.status(500).json({ error: 'Server configuration error' });
     }
 
