@@ -30,7 +30,12 @@ export default async function handler(req, res) {
       : process.env.STRIPE_PUBLISHABLE_KEY;
     
     if (!stripeSecretKey || !stripePublishableKey) {
-      console.error('Stripe keys not configured');
+      console.error('Stripe keys not configured', {
+        hasSecretKey: !!stripeSecretKey,
+        hasPublishableKey: !!stripePublishableKey,
+        forceTestMode: forceTestMode,
+        envKeys: Object.keys(process.env).filter(k => k.includes('STRIPE'))
+      });
       return res.status(500).json({ 
         error: 'Server configuration error',
         details: forceTestMode 
@@ -38,6 +43,12 @@ export default async function handler(req, res) {
           : 'STRIPE_SECRET_KEY or STRIPE_PUBLISHABLE_KEY not set in Vercel environment variables'
       });
     }
+    
+    console.log('Using Stripe keys:', {
+      secretKeyPrefix: stripeSecretKey.substring(0, 7) + '...',
+      publishableKeyPrefix: stripePublishableKey.substring(0, 7) + '...',
+      forceTestMode: forceTestMode
+    });
 
     // Import Stripe
     const stripe = (await import('stripe')).default(stripeSecretKey);
@@ -52,21 +63,28 @@ export default async function handler(req, res) {
     // Create or get customer by email if provided
     let customerId;
     if (email) {
-      const customers = await stripe.customers.list({
-        email: email,
-        limit: 1,
-      });
-      
-      if (customers.data.length > 0) {
-        customerId = customers.data[0].id;
-      } else {
-        const customer = await stripe.customers.create({
+      try {
+        const customers = await stripe.customers.list({
           email: email,
-          metadata: {
-            extension: 'nimbus',
-          },
+          limit: 1,
         });
-        customerId = customer.id;
+        
+        if (customers.data.length > 0) {
+          customerId = customers.data[0].id;
+          console.log('Found existing customer:', customerId);
+        } else {
+          const customer = await stripe.customers.create({
+            email: email,
+            metadata: {
+              extension: 'nimbus',
+            },
+          });
+          customerId = customer.id;
+          console.log('Created new customer:', customerId);
+        }
+      } catch (customerError) {
+        console.error('Error handling customer:', customerError);
+        // Continue without customer ID - will use customer_email instead
       }
     }
 
@@ -116,7 +134,16 @@ export default async function handler(req, res) {
       sessionConfig.customer_email = email;
     }
     
+    console.log('Creating checkout session with config:', {
+      hasCustomer: !!customerId,
+      hasCustomerEmail: !!email,
+      mode: sessionConfig.mode,
+      trialDays: sessionConfig.subscription_data.trial_period_days
+    });
+    
     const session = await stripe.checkout.sessions.create(sessionConfig);
+    
+    console.log('Checkout session created successfully:', session.id);
 
     return res.status(200).json({
       sessionId: session.id,
