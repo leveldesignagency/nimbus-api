@@ -9,12 +9,12 @@ export default async function handler(req, res) {
 
   try {
     // Get Stripe keys from environment variables
-    // Check for test keys first (if TEST_STRIPE_SECRET_KEY is set, use test mode)
-    const useTestMode = !!process.env.TEST_STRIPE_SECRET_KEY;
-    const stripeSecretKey = useTestMode 
+    // Use production keys by default, only use test if FORCE_TEST_MODE is explicitly set
+    const forceTestMode = process.env.FORCE_TEST_MODE === 'true';
+    const stripeSecretKey = forceTestMode 
       ? process.env.TEST_STRIPE_SECRET_KEY 
       : process.env.STRIPE_SECRET_KEY;
-    const stripePublishableKey = useTestMode
+    const stripePublishableKey = forceTestMode
       ? process.env.TEST_STRIPE_PUBLISHABLE_KEY
       : process.env.STRIPE_PUBLISHABLE_KEY;
     

@@ -24,14 +24,14 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Subscription ID or email required' });
     }
 
-    // Check for test keys first (if TEST_STRIPE_SECRET_KEY is set, use test mode)
-    const useTestMode = !!process.env.TEST_STRIPE_SECRET_KEY;
-    const stripeSecretKey = useTestMode 
+    // Use production keys by default, only use test if FORCE_TEST_MODE is explicitly set
+    const forceTestMode = process.env.FORCE_TEST_MODE === 'true';
+    const stripeSecretKey = forceTestMode 
       ? process.env.TEST_STRIPE_SECRET_KEY 
       : process.env.STRIPE_SECRET_KEY;
     
     if (!stripeSecretKey) {
-      console.error(useTestMode ? 'TEST_STRIPE_SECRET_KEY' : 'STRIPE_SECRET_KEY', 'environment variable not set');
+      console.error(forceTestMode ? 'TEST_STRIPE_SECRET_KEY' : 'STRIPE_SECRET_KEY', 'environment variable not set');
       return res.status(500).json({ error: 'Server configuration error' });
     }
 
@@ -95,6 +95,28 @@ export default async function handler(req, res) {
     // If subscription is in trial, cancel it instead of refunding
     if (subscription.status === 'trialing') {
       await stripe.subscriptions.cancel(subscription.id);
+      
+      // Send email notification
+      try {
+        await fetch('https://nimbus-api-ten.vercel.app/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: 'leveldesignagency@gmail.com',
+            subject: `[Nimbus] Trial Cancellation`,
+            html: `
+              <h2>Trial Subscription Cancelled</h2>
+              <p><strong>Customer Email:</strong> ${email || subscription.customer}</p>
+              <p><strong>Subscription ID:</strong> ${subscription.id}</p>
+              <p><strong>Status:</strong> Trial (no refund needed)</p>
+              <p><strong>Cancelled:</strong> ${new Date().toLocaleString()}</p>
+            `,
+          }),
+        });
+      } catch (emailError) {
+        console.error('Failed to send trial cancellation email:', emailError);
+      }
+      
       return res.status(200).json({
         success: true,
         message: 'Trial subscription cancelled',
@@ -116,6 +138,31 @@ export default async function handler(req, res) {
 
     // Cancel the subscription
     await stripe.subscriptions.cancel(subscription.id);
+
+    // Send email notification to admin
+    try {
+      await fetch('https://nimbus-api-ten.vercel.app/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: 'leveldesignagency@gmail.com',
+          subject: `[Nimbus] Refund Request - £${refund.amount / 100}`,
+          html: `
+            <h2>Refund Request Processed</h2>
+            <p><strong>Customer Email:</strong> ${email || subscription.customer}</p>
+            <p><strong>Subscription ID:</strong> ${subscription.id}</p>
+            <p><strong>Refund ID:</strong> ${refund.id}</p>
+            <p><strong>Amount:</strong> £${refund.amount / 100} ${refund.currency.toUpperCase()}</p>
+            <p><strong>Refund Date:</strong> ${new Date().toLocaleString()}</p>
+            <p><strong>Subscription Created:</strong> ${new Date(subscription.created * 1000).toLocaleString()}</p>
+            <p><strong>Days Since Purchase:</strong> ${Math.floor(daysSincePurchase)}</p>
+          `,
+        }),
+      });
+    } catch (emailError) {
+      console.error('Failed to send refund email:', emailError);
+      // Don't fail the refund if email fails
+    }
 
     return res.status(200).json({
       success: true,

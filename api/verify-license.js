@@ -15,14 +15,14 @@ export default async function handler(req, res) {
     }
 
     // Get Stripe secret key from environment variable
-    // Check for test keys first (if TEST_STRIPE_SECRET_KEY is set, use test mode)
-    const useTestMode = !!process.env.TEST_STRIPE_SECRET_KEY;
-    const stripeSecretKey = useTestMode 
+    // Use production keys by default, only use test if FORCE_TEST_MODE is explicitly set
+    const forceTestMode = process.env.FORCE_TEST_MODE === 'true';
+    const stripeSecretKey = forceTestMode 
       ? process.env.TEST_STRIPE_SECRET_KEY 
       : process.env.STRIPE_SECRET_KEY;
     
     if (!stripeSecretKey) {
-      console.error(useTestMode ? 'TEST_STRIPE_SECRET_KEY' : 'STRIPE_SECRET_KEY', 'environment variable not set');
+      console.error(forceTestMode ? 'TEST_STRIPE_SECRET_KEY' : 'STRIPE_SECRET_KEY', 'environment variable not set');
       return res.status(500).json({ error: 'Server configuration error' });
     }
 
@@ -38,22 +38,35 @@ export default async function handler(req, res) {
       // First, try to get subscription by ID
       try {
         subscription = await stripe.subscriptions.retrieve(licenseKey);
+        console.log('Found subscription by ID:', subscription.id, 'Status:', subscription.status);
       } catch (e) {
         // If that fails, search by customer email (licenseKey might be email)
+        console.log('Subscription ID lookup failed, trying email:', licenseKey);
         const customers = await stripe.customers.list({
-          email: licenseKey,
-          limit: 1,
+          email: licenseKey.toLowerCase().trim(), // Normalize email
+          limit: 10, // Get more customers in case of duplicates
         });
         
-        if (customers.data.length > 0) {
+        console.log('Found customers:', customers.data.length);
+        
+        // Try each customer to find an active subscription
+        for (const customer of customers.data) {
           const subscriptions = await stripe.subscriptions.list({
-            customer: customers.data[0].id,
-            status: 'active',
-            limit: 1,
+            customer: customer.id,
+            limit: 10, // Get all subscriptions for this customer
           });
           
-          if (subscriptions.data.length > 0) {
-            subscription = subscriptions.data[0];
+          console.log(`Found ${subscriptions.data.length} subscriptions for customer ${customer.id}`);
+          
+          // Look for active or trialing subscriptions
+          const activeSub = subscriptions.data.find(sub => 
+            sub.status === 'active' || sub.status === 'trialing'
+          );
+          
+          if (activeSub) {
+            subscription = activeSub;
+            console.log('Found active subscription:', subscription.id, 'Status:', subscription.status);
+            break;
           }
         }
       }
@@ -93,7 +106,11 @@ export default async function handler(req, res) {
         customerId: subscription.customer,
         status: subscription.status,
         expiryDate: expiryDate.toISOString(),
-        currentPeriodEnd: subscription.current_period_end
+        currentPeriodEnd: subscription.current_period_end,
+        cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+        email: customerEmail || normalizedLicenseKey,
+        created: subscription.created, // Subscription creation timestamp
+        trialEnd: subscription.trial_end || null, // Trial end timestamp (null if no trial)
       });
 
     } catch (stripeError) {
