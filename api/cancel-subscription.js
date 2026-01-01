@@ -98,28 +98,26 @@ export default async function handler(req, res) {
             // Cancel immediately since refunded
             await stripe.subscriptions.cancel(subscription.id);
             
-            // Send email notification
-            try {
-              await fetch('https://nimbus-api-ten.vercel.app/api/send-email', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  to: 'leveldesignagency@gmail.com',
-                  subject: `[Nimbus] Subscription Cancelled & Refunded - £${refundAmount}`,
-                  html: `
-                    <h2>Subscription Cancelled & Refunded</h2>
-                    <p><strong>Customer Email:</strong> ${email || subscription.customer}</p>
-                    <p><strong>Subscription ID:</strong> ${subscription.id}</p>
-                    <p><strong>Refund Amount:</strong> £${refundAmount}</p>
-                    <p><strong>Refund ID:</strong> ${refund.id}</p>
-                    <p><strong>Days Since Purchase:</strong> ${Math.floor(daysSincePurchase)}</p>
-                    <p><strong>Cancelled:</strong> ${new Date().toLocaleString()}</p>
-                  `,
-                }),
-              });
-            } catch (emailError) {
-              console.error('Failed to send refund email:', emailError);
-            }
+            // Send email notification (non-blocking)
+            fetch('https://nimbus-api-ten.vercel.app/api/send-email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                to: 'leveldesignagency@gmail.com',
+                subject: `[Nimbus] Subscription Cancelled & Refunded - £${refundAmount}`,
+                html: `
+                  <h2>Subscription Cancelled & Refunded</h2>
+                  <p><strong>Customer Email:</strong> ${email || subscription.customer}</p>
+                  <p><strong>Subscription ID:</strong> ${subscription.id}</p>
+                  <p><strong>Refund Amount:</strong> £${refundAmount}</p>
+                  <p><strong>Refund ID:</strong> ${refund.id}</p>
+                  <p><strong>Days Since Purchase:</strong> ${Math.floor(daysSincePurchase)}</p>
+                  <p><strong>Cancelled:</strong> ${new Date().toLocaleString()}</p>
+                `,
+              }),
+            }).catch((emailError) => {
+              console.error('Failed to send refund email (non-blocking):', emailError);
+            });
             
             return res.status(200).json({
               success: true,
@@ -149,39 +147,38 @@ export default async function handler(req, res) {
       });
     }
 
-    // Send email notification to admin
-    try {
-      await fetch('https://nimbus-api-ten.vercel.app/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: 'leveldesignagency@gmail.com',
-          subject: action === 'reactivate' 
-            ? `[Nimbus] Subscription Reactivated`
-            : `[Nimbus] Subscription Cancellation Request`,
-          html: action === 'reactivate'
-            ? `
-              <h2>Subscription Reactivated</h2>
-              <p><strong>Customer Email:</strong> ${email || subscription.customer}</p>
-              <p><strong>Subscription ID:</strong> ${subscription.id}</p>
-              <p><strong>Status:</strong> Active (reactivated)</p>
-              <p><strong>Current Period End:</strong> ${new Date(subscription.current_period_end * 1000).toLocaleString()}</p>
-            `
-            : `
-              <h2>Subscription Cancellation Request</h2>
-              <p><strong>Customer Email:</strong> ${email || subscription.customer}</p>
-              <p><strong>Subscription ID:</strong> ${subscription.id}</p>
-              <p><strong>Status:</strong> ${subscription.status}</p>
-              <p><strong>Current Period End:</strong> ${new Date(subscription.current_period_end * 1000).toLocaleString()}</p>
-              <p><strong>Reason:</strong> ${reason || 'Not provided'}</p>
-              <p><strong>Cancellation Type:</strong> At period end (customer retains access until expiry)</p>
-            `,
-        }),
-      });
-    } catch (emailError) {
-      console.error('Failed to send email:', emailError);
+    // Send email notification to admin (non-blocking)
+    // Don't wait for email to complete - just fire and forget
+    fetch('https://nimbus-api-ten.vercel.app/api/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: 'leveldesignagency@gmail.com',
+        subject: action === 'reactivate' 
+          ? `[Nimbus] Subscription Reactivated`
+          : `[Nimbus] Subscription Cancellation Request`,
+        html: action === 'reactivate'
+          ? `
+            <h2>Subscription Reactivated</h2>
+            <p><strong>Customer Email:</strong> ${email || subscription.customer}</p>
+            <p><strong>Subscription ID:</strong> ${subscription.id}</p>
+            <p><strong>Status:</strong> Active (reactivated)</p>
+            <p><strong>Current Period End:</strong> ${new Date(subscription.current_period_end * 1000).toLocaleString()}</p>
+          `
+          : `
+            <h2>Subscription Cancellation Request</h2>
+            <p><strong>Customer Email:</strong> ${email || subscription.customer}</p>
+            <p><strong>Subscription ID:</strong> ${subscription.id}</p>
+            <p><strong>Status:</strong> ${subscription.status}</p>
+            <p><strong>Current Period End:</strong> ${new Date(subscription.current_period_end * 1000).toLocaleString()}</p>
+            <p><strong>Reason:</strong> ${reason || 'Not provided'}</p>
+            <p><strong>Cancellation Type:</strong> At period end (customer retains access until expiry)</p>
+          `,
+      }),
+    }).catch((emailError) => {
+      console.error('Failed to send email (non-blocking):', emailError);
       // Don't fail the operation if email fails
-    }
+    });
 
     return res.status(200).json({
       success: true,
