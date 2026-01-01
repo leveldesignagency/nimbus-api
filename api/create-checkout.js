@@ -74,6 +74,12 @@ export default async function handler(req, res) {
     // Only use customer OR customer_email, not both
     const sessionConfig = {
       payment_method_types: ['card'],
+      // Disable Stripe Link - users will enter card details directly
+      payment_method_options: {
+        link: {
+          enabled: false,
+        },
+      },
       line_items: [
         {
           price_data: {
