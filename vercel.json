@@ -9,7 +9,8 @@
     { "source": "/api/process-refund", "destination": "/api/process-refund.js" },
     { "source": "/api/get-session", "destination": "/api/get-session.js" },
     { "source": "/api/cancel-subscription", "destination": "/api/cancel-subscription.js" },
-    { "source": "/api/send-email", "destination": "/api/send-email.js" }
+    { "source": "/api/send-email", "destination": "/api/send-email.js" },
+    { "source": "/api/create-portal-session", "destination": "/api/create-portal-session.js" }
   ],
   "functions": {
     "api/chat.js": {
@@ -40,6 +41,9 @@
       "maxDuration": 10
     },
     "api/send-email.js": {
+      "maxDuration": 10
+    },
+    "api/create-portal-session.js": {
       "maxDuration": 10
     }
   }
