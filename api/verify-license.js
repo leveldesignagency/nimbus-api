@@ -87,8 +87,26 @@ export default async function handler(req, res) {
         });
       }
 
-      // Calculate expiry date
-      const expiryDate = new Date(subscription.current_period_end * 1000);
+      // Get customer email for response
+      let customerEmail = null;
+      try {
+        const customer = await stripe.customers.retrieve(subscription.customer);
+        customerEmail = customer.email || null;
+      } catch (e) {
+        console.log('Could not retrieve customer email:', e.message);
+        // If licenseKey looks like an email, use it as fallback
+        if (licenseKey.includes('@')) {
+          customerEmail = licenseKey.toLowerCase().trim();
+        }
+      }
+
+      // Calculate expiry date - use trial_end if in trial, otherwise current_period_end
+      let expiryDate;
+      if (subscription.status === 'trialing' && subscription.trial_end) {
+        expiryDate = new Date(subscription.trial_end * 1000);
+      } else {
+        expiryDate = new Date(subscription.current_period_end * 1000);
+      }
       const now = new Date();
 
       if (expiryDate < now) {
@@ -108,7 +126,7 @@ export default async function handler(req, res) {
         expiryDate: expiryDate.toISOString(),
         currentPeriodEnd: subscription.current_period_end,
         cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
-        email: customerEmail || normalizedLicenseKey,
+        email: customerEmail || (licenseKey.includes('@') ? licenseKey.toLowerCase().trim() : null),
         created: subscription.created, // Subscription creation timestamp
         trialEnd: subscription.trial_end || null, // Trial end timestamp (null if no trial)
       });
