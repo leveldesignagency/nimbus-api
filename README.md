@@ -78,3 +78,5 @@ zip -r nimbus-extension-submission.zip manifest.json background.js contentScript
 
 
 
+
+
